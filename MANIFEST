@@ -1,0 +1,11 @@
+Changes
+Makefile.PL
+MANIFEST
+README
+lib/Class/Throwable.pm
+t/10_Class_Throwable_test.t
+t/20_Class_Throwable_subException_test.t
+t/30_Class_Throwable_inline_exceptions_test.t
+t/40_Class_Throwable_misc_test.t
+t/pod.t
+t/pod_coverage.t

@@ -66,15 +66,15 @@ is($@->stackTraceToString(),
    
 ok(overload::Overloaded($@), '... stringified overload');
 
-$Class::Throwable::VERBOSE = 0;
+Class::Throwable->import(VERBOSE => 0);
 
 is("$@", '', '... got the stringified result we expected');  
 
-$Class::Throwable::VERBOSE = 1;
+Class::Throwable->import(VERBOSE => 1);
 
 is("$@", 'Test Message', '... got the stringified result we expected');  
 
-$Class::Throwable::VERBOSE = 2;
+Class::Throwable->import(VERBOSE => 2);
 
 is("$@",
    q{Test Message

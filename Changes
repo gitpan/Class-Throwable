@@ -1,5 +1,11 @@
 Revision history for Perl extension Class-Throwable.
 
+0.04 Mon Oct 4 2004	
+    - I changed the way Verbosity is handled. Removing
+      the $Class::Throwable::VERBOSE variable, in favor
+      of a more flexible alternative. 
+        - added tests and docs for this
+
 0.03 Fri Oct 1 2004
 	- added the new method, and altered how throw 
 	  handles things

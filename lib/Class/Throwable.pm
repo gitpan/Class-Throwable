@@ -4,26 +4,48 @@ package Class::Throwable;
 use strict;
 use warnings;
 
-our $VERSION = '0.03';
+our $VERSION = '0.04';
 
-our $VERBOSE = 1;
+our $DEFAULT_VERBOSITY = 1;
+
+my %VERBOSITY;
 
 # allow the creation of exceptions 
 # without having to actually create 
 # a package for them
 sub import {
-    shift;
-    return unless @_;
-    my @exceptions = @_;
-    foreach my $exception (@exceptions) {
-        next unless $exception;
-        eval "package ${exception}; \@${exception}::ISA = qw(Class::Throwable);";  
-        die "An error occured while constructing Class::Throwable exception ($exception) : $@" if $@;      
-    }
+	my $class = shift;
+    return unless @_;	
+	if ($_[0] eq 'VERBOSE') {
+		(defined $_[1]) || die "You must specify a level of verbosity with Class::Throwable";
+		# make sure its not a refernce
+		$class = ref($class) || $class;
+		# and then store it
+		$VERBOSITY{$class} = $_[1];
+	}
+	else {
+		($class eq 'Class::Throwable') 
+			|| die "Inline Exceptions can only be created with Class::Throwable";
+		my @exceptions = @_;
+		foreach my $exception (@exceptions) {
+			next unless $exception;
+			eval "package ${exception}; \@${exception}::ISA = qw(Class::Throwable);";  
+			die "An error occured while constructing Class::Throwable exception ($exception) : $@" if $@;      
+		}
+	}
 }
 
 # overload the stringify operation
 use overload q|""| => "toString", fallback => 1;
+
+# a class method to set the verbosity 
+# of inline exceptions
+sub setVerbosity {
+	my ($class, $verbosity) = @_;
+	(!ref($class)) || die "setVerbosity is a class method only, it cannot be used on an instance";
+	(defined($verbosity)) || die "You must specify a level of verbosity with Class::Throwable";
+	$VERBOSITY{$class} = $verbosity;
+}
 
 # create an exception without 
 # any stack trace information
@@ -142,7 +164,14 @@ sub stackTraceToString {
 
 sub toString {
 	my ($self, $verbosity) = @_;
-    $verbosity = $VERBOSE unless defined $verbosity;
+	unless (defined $verbosity) {
+		if (exists $VERBOSITY{ref($self)}) {
+			$verbosity = $VERBOSITY{ref($self)};
+		}
+		else {
+			$verbosity = $DEFAULT_VERBOSITY;
+		}
+	}	
     # get out of here quick if 
     # exception handling is off
     return "" if $verbosity <= 0;
@@ -227,9 +256,20 @@ Class::Throwable - A minimal lightweight exception class
   # you can also declare inline exceptions
   use Class::Throwable qw(My::App::Exception::IllegalOperation);
   
+  # set their global verbosity as well
+  # with the class method
+  My::App::Exception::IllegalOperation->setVerbosity(2);
+  
   eval {
       throw My::App::Exception::IllegalOperation "Bad, real bad";
   };
+  
+  # can also declare subclasses of Class::Throwable 
+  # in other files, then when you import them, you
+  # can set their verbosity
+  use My::Sub::Class::In::A::Seperate::File (VERBOSE => 1);
+  
+  throw My::Sub::Class::In::A::Seperate::File "This excepton will use a verbosity of 1";
   
   # you can even create exceptions, then throw them later
   my $e = Class::Throwable->new("Things have gone bad, but I need to do something first", $@);
@@ -242,6 +282,40 @@ Class::Throwable - A minimal lightweight exception class
 =head1 DESCRIPTION
 
 This module implements a minimal lightweight exception object. It is meant to be a compromise between more basic solutions like L<Carp> which can only print information and cannot handle exception objects, and more more complex solutions like L<Exception::Class> which can be used to define complex inline exceptions and has a number of module dependencies. 
+
+=head2 Inline Exceptions
+
+You can easily create new exception classes inline by passing them with the C<use> statment like this:
+
+  use Class::Throwable ('My::InlineException', 'My::Other::InlineException');
+
+This is a quick and easy way to define arbitrary exception classes without the need to manually create seperate files or packages for them. However, it should be noted that subclasses of Class::Throwable cannot be used to define inline exceptions. If you attempt to do this, an exception will be thrown.
+
+=head2 Exception Verbosity
+
+Class::Throwable offeres a number of different types of diagnostic outputs to suit your needs. Most of this is controlled through the verbosity levels. If the verbosity level is set to 0 or below, an empty string is returned. If the value is set to 1, then the exception's message is returned. If the value is set to 2 or above, a full stack trace along with full stack traces for all sub-exceptions are returned in the format shown in C<stackTraceToString>. The default verbosity setting is 1.
+
+There are a number of ways in which you can set the verbosity of the exceptions produced by Class::Throwable. The simplest way is as the argument to the C<toString> method. Using this method will override any other settings you may have, and insure that the output of this method is as you ask it to be.
+
+  $@->toString(2);
+
+However, to use this style properly, this requires that you test the value of C<$@> to be sure it is a Class::Throwable object. In some cases, this may not be an issue, while in others, it makes more sense to set verbosity on a wider scale. 
+
+For instance, if you define inline exceptions, then the simplest way to set a verbostity level for a particular inline exception is through the class method C<setVerbosity>.
+
+  use Class::Throwable qw(My::InlineException);
+  
+  My::InlineException->setVerbosity(2);
+
+This means that unless the C<toString> verbosity argument overrides it, all I<My::InlineException> exceptions will use a verbosity setting of 2. This method means that you can easily C<print> the value of C<$@> and then any I<My::InlineException> exceptions will be automatically stringified with a verbosity level of 2. This can simplify exception catching by reducing the need to inspect the value of C<$@>.
+
+If you defined your exceptions as subclasses of Class::Throwable and stored them in seperate files, then another means of setting the verbosity level is to assign it in the C<use> statement. 
+
+  use My::SeperateFileSubClass::Exception (VERBOSE => 2);
+
+This has the same effect as the C<setVerbosity> class method, in fact, there is nothing to stop you from using the C<setVerbosity> class method in this case if you like. This method can also be used on Class::Throwable itself, however, this does not set the verbosity level for all subclasses, only for Class::Throwable exceptions.
+
+There is one last method which can be used. This method has the widest scope of all the methods. The variable C<$Class::Throwable::DEFAULT_VERBOSITY> can be set. Setting this value will take effect if, 1) there is no value passed to the C<toString> method and 2) no verbosity level has been set for the particular class, either through C<setVerbosity> or the C<use> statement. 
 
 =head1 METHODS
 
@@ -262,6 +336,16 @@ If this method is called as an instance method on an exception object pre-built 
 =item B<new ($message, $sub_exception)>
 
 This is an alternate means of creating an exception object, it is much like C<throw>, except that it does not collect stack trace information or C<die>. It stores the C<$message> and C<$sub_exception> values, and then returns the exception instance, to be possibly thrown later on.
+
+=back
+
+=head2 Class Methods
+
+=over 4
+
+=item B<setVerbosity ($verbosity)> 
+
+This is a class method, if it is called with an instance, and exception will be thrown. This class method can be used to set the verbosity level for a particular class. See the section L<Exception Verbosity> above for more details.
 
 =back
 
@@ -295,7 +379,7 @@ This object overloads the stringification operator, and will call the C<toString
 
 =item B<toString ($verbosity)>
 
-This will print out the exception object's information at a variable level of verbosity which is specified be either the optional argument C<$verbosity> or the value of C<$Class::Throwable::VERBOSE>. If either value is set to 0 or below, an empty string is returned. If the value is set to 1, then the exception's message is returned. If the value is set to 2 or above, a full stack trace along with full stack traces for all sub-exceptions are returned in the format shown in C<stackTraceToString>. This is meant to be a simple and flexible way to control the level of exception output on either a global level (with C<$Class::Throwable::VERBOSE>) or a more granular level (with the C<$verbosity> argument). 
+This will print out the exception object's information at a variable level of verbosity which is specified be the optional argument C<$verbosity>. See the section L<Exception Verbosity> above for more details.
 
 =item B<stringValue>
 
@@ -327,9 +411,9 @@ I use B<Devel::Cover> to test the code coverage of my tests, below is the B<Deve
  ------------------------ ------ ------ ------ ------ ------ ------ ------
  File                       stmt branch   cond    sub    pod   time  total
  ------------------------ ------ ------ ------ ------ ------ ------ ------
- Class/Throwable.pm        100.0   96.2   58.3  100.0  100.0  100.0   95.7
+ Class/Throwable.pm        100.0   97.4   53.3  100.0  100.0  100.0   95.2
  ------------------------ ------ ------ ------ ------ ------ ------ ------
- Total                     100.0   96.2   58.3  100.0  100.0  100.0   95.7
+ Total                     100.0   97.4   53.3  100.0  100.0  100.0   95.2
  ------------------------ ------ ------ ------ ------ ------ ------ ------
 
 =head1 SEE ALSO

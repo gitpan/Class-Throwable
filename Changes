@@ -1,5 +1,11 @@
 Revision history for Perl extension Class-Throwable.
 
+0.10 Sun Dec 12 2004
+    - changed the output format to a more compact
+      (each stack frame takes one line rather than 6)
+        - altered tests to accomidate this
+        - added example output to the docs
+
 0.09 Tues Nov 30 2004
     - added the 'retrofit' capabilities, see the docs for 
       more information about this

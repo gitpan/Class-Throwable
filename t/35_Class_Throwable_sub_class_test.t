@@ -20,13 +20,8 @@ eval {
 };
 
 my $expected = <<EXPECTED;
-This is my message
-  >> stack frame (1)
-     ----------------
-     package: main
-     subroutine: (eval)
-     filename: t${path_seperator}35_Class_Throwable_sub_class_test.t
-     line number: 18
+TestException : This is my message
+  |--[ main::(eval) called in t${path_seperator}35_Class_Throwable_sub_class_test.t line 18 ]
 EXPECTED
 
 is($@, $expected, '... got the output we expected');
@@ -38,4 +33,4 @@ TestException->setVerbosity(1);
 eval {
 	throw TestException "This is my other message";
 };
-is($@, 'This is my other message', '... got the output we expected');
+is($@, 'TestException : This is my other message', '... got the output we expected');

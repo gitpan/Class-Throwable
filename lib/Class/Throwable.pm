@@ -4,7 +4,7 @@ package Class::Throwable;
 use strict;
 use warnings;
 
-our $VERSION = '0.09';
+our $VERSION = '0.10';
 
 use Scalar::Util qw(blessed);
 
@@ -157,26 +157,20 @@ sub getStackTrace {
 }
 
 sub stackTraceToString {
-	my ($self) = @_;
+	my ($self, $depth) = @_;
 	my @output;
-	my $i = 0;
+    $depth ||= 1;
+    my $indent = "  " x $depth;
 	foreach my $frame (@{$self->{stack_trace}}) {
 		my ($package, $filename, $line, $subroutine) = @{$frame};	
-		$i++;
-		push @output, join "\n" => (
-						"  >> stack frame ($i)", 
-                        "     ----------------",
-                        "     package: $package", 
-                        "     subroutine: $subroutine",
-                        "     filename: $filename",
-                        "     line number: $line"                            
-                        );
+        $subroutine = "${package}::${subroutine}" if ($subroutine eq '(eval)');
+		push @output, "$indent|--[ $subroutine called in $filename line $line ]"                             
 	}
 	return (join "\n" => @output);
 }
 
 sub toString {
-	my ($self, $verbosity) = @_;
+	my ($self, $verbosity, $depth) = @_;
 	unless (defined $verbosity) {
 		if (exists $VERBOSITY{ref($self)}) {
 			$verbosity = $VERBOSITY{ref($self)};
@@ -189,13 +183,18 @@ sub toString {
     # exception handling is off
     return "" if $verbosity <= 0;
     # otherwise construct our output
-    my $output = $self->{"message"};
+    my $output = ref($self) . " : " . $self->{"message"};
     # if we VERBOSE is set to 1, then 
     # we just return the message
     return $output if $verbosity <= 1;
+    $depth ||= 1;
+    if ($depth > 1) {
+        $output = ("  " x ($depth - 1)) . "+ $output";
+        $depth++;
+    }
     # however, if VERBOSE is 2 or above
     # then we include the stack trace
-	$output .= "\n" . (join "\n" => $self->stackTraceToString()) . "\n";
+	$output .= "\n" . (join "\n" => $self->stackTraceToString($depth)) . "\n";
     # now we gather any sub-exceptions too 
     if ($self->hasSubException()) {
         my $e = $self->getSubException();
@@ -203,12 +202,12 @@ sub toString {
         # of our objects, and ....
         if (blessed($e) && $e->isa("Class::Throwable")) {
             # deal with it appropriately
-            $output .= $e->toString($verbosity);
+            $output .= $e->toString($verbosity, $depth + 1);
         }
         # otherwise ...
         else {
-            # just stringify it
-            $output .= $e;
+            # just stringify it        
+            $output .= ("  " x ($depth)) . "+ $e";        
         }
     }
     return $output;
@@ -427,17 +426,52 @@ This will return the normal perl stringified value of the object without going t
 =item B<stackTraceToString>
 
 This method is used to print the stack trace information, the stack trace is presented in the following format:
-
-  >> stack frame (1)
-     ----------------
-     package: main
-     subroutine: main::foo
-     filename: my_script.pl
-     line number: 12
-
-Each subsequent stack frame will also be printed with the stack-frame number incremented for each one. 
+  
+    |--[ main::foo called in my_script.pl line 12 ]
+    |--[ main::bar called in my_script.pl line 14 ]
+    |--[ main::baz called in my_script.pl line 16 ]
 
 =back
+
+=head1 EXAMPLE OUTPUT
+
+Given the following code:
+
+  {
+    package Foo;
+    sub foo { eval { Bar::bar() }; throw Class::Throwable "Foo!!", $@ }
+    
+    package Bar;
+    sub bar { eval { Baz::baz() }; throw Class::Throwable "Bar!!", $@ }
+    
+    package Baz;
+    sub baz { throw Class::Throwable "Baz!!" }
+  }
+
+  eval { Foo::foo() };
+  print $@->toString($verbosity) if $@;  
+  
+If you were to print the exception with verbosity of 0, you would get no output at all. This mode can be used to supress exception output if needed. If you were to print the exception with verbosity of 1, you would get this output.
+
+  Class::Throwable : Foo!!  
+    
+If you were to print the exception with verbosity of 2, you would get this output.
+    
+  Class::Throwable : Foo!!
+    |--[ Foo::foo called in test.pl line 26 ]
+    |--[ main::(eval) called in test.pl line 26 ]
+    + Class::Throwable : Bar!!
+        |--[ Bar::bar called in test.pl line 19 ]
+        |--[ Foo::(eval) called in test.pl line 19 ]
+        |--[ Foo::foo called in test.pl line 26 ]
+        |--[ main::(eval) called in test.pl line 26 ]
+        + Class::Throwable : Baz!!
+            |--[ Baz::baz called in test.pl line 21 ]
+            |--[ Bar::(eval) called in test.pl line 21 ]
+            |--[ Bar::bar called in test.pl line 19 ]
+            |--[ Foo::(eval) called in test.pl line 19 ]
+            |--[ Foo::foo called in test.pl line 26 ]
+            |--[ main::(eval) called in test.pl line 26 ]
 
 =head1 BUGS
 
@@ -450,9 +484,9 @@ I use B<Devel::Cover> to test the code coverage of my tests, below is the B<Deve
  ---------------------------- ------ ------ ------ ------ ------ ------ ------
  File                           stmt branch   cond    sub    pod   time  total
  ---------------------------- ------ ------ ------ ------ ------ ------ ------
- Class/Throwable.pm            100.0   97.8   55.6  100.0  100.0  100.0   95.4
+ Class/Throwable.pm            100.0   98.0   63.6  100.0  100.0  100.0   95.7
  ---------------------------- ------ ------ ------ ------ ------ ------ ------
- Total                         100.0   97.8   55.6  100.0  100.0  100.0   95.4
+ Total                         100.0   98.0   63.6  100.0  100.0  100.0   95.7
  ---------------------------- ------ ------ ------ ------ ------ ------ ------
 
 =head1 SEE ALSO

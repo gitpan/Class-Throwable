@@ -44,27 +44,12 @@ ok($e3->hasSubException(), '... e3 does have a sub-exception');
 is($e3->getSubException()->stringValue(), $e2->stringValue(), '... e3\'s sub-exception is e2');
 
 my $expected = <<EXPECTED;
-This is our third exception
-  >> stack frame (1)
-     ----------------
-     package: main
-     subroutine: (eval)
-     filename: t${path_seperator}20_Class_Throwable_subException_test.t
-     line number: 28
-This is our second exception
-  >> stack frame (1)
-     ----------------
-     package: main
-     subroutine: (eval)
-     filename: t${path_seperator}20_Class_Throwable_subException_test.t
-     line number: 22
-This is our first exception
-  >> stack frame (1)
-     ----------------
-     package: main
-     subroutine: (eval)
-     filename: t${path_seperator}20_Class_Throwable_subException_test.t
-     line number: 16
+Class::Throwable : This is our third exception
+  |--[ main::(eval) called in t${path_seperator}20_Class_Throwable_subException_test.t line 28 ]
+  + Class::Throwable : This is our second exception
+      |--[ main::(eval) called in t${path_seperator}20_Class_Throwable_subException_test.t line 22 ]
+      + Class::Throwable : This is our first exception
+          |--[ main::(eval) called in t${path_seperator}20_Class_Throwable_subException_test.t line 16 ]
 EXPECTED
 
 is($e3->toString(2), $expected, '... toString prints subexceptions too');
@@ -82,14 +67,9 @@ like($@->getSubException(),
      '... our sub-exception is a string');
      
 my $expected2 = <<EXPECTED2;
-Testing non-object sub-Exceptions
-  >> stack frame (1)
-     ----------------
-     package: main
-     subroutine: (eval)
-     filename: t${path_seperator}20_Class_Throwable_subException_test.t
-     line number: 72
-Illegal division by zero at t${path_seperator}20_Class_Throwable_subException_test.t line 73.
+Class::Throwable : Testing non-object sub-Exceptions
+  |--[ main::(eval) called in t${path_seperator}20_Class_Throwable_subException_test.t line 57 ]
+  + Illegal division by zero at t${path_seperator}20_Class_Throwable_subException_test.t line 58.
 EXPECTED2
 
 is($@->toString(2), $expected2, '... toString prints what we expected');

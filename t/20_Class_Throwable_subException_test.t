@@ -66,7 +66,8 @@ EXPECTED
 is($e3->toString(2), $expected, '... toString prints subexceptions too');
 
 eval {
-    eval "2 / 0";
+    my $test = sub { $_[0] / 0 };
+    eval { $test->(2) };
     throw Class::Throwable "Testing non-object sub-Exceptions", $@;
 };
 isa_ok($@, 'Class::Throwable');
@@ -84,7 +85,7 @@ Testing non-object sub-Exceptions
      subroutine: (eval)
      filename: t/20_Class_Throwable_subException_test.t
      line number: 68
-Illegal division by zero at (eval 5) line 2.
+Illegal division by zero at t/20_Class_Throwable_subException_test.t line 69.
 EXPECTED2
 
 is($@->toString(2), $expected2, '... toString prints what we expected');

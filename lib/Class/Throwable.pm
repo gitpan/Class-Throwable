@@ -4,7 +4,7 @@ package Class::Throwable;
 use strict;
 use warnings;
 
-our $VERSION = '0.08';
+our $VERSION = '0.09';
 
 use Scalar::Util qw(blessed);
 
@@ -19,20 +19,31 @@ sub import {
 	my $class = shift;
     return unless @_;	
 	if ($_[0] eq 'VERBOSE') {
-		(defined $_[1]) || die "You must specify a level of verbosity with Class::Throwable";
+		(defined $_[1]) || die "You must specify a level of verbosity with Class::Throwable\n";
 		# make sure its not a refernce
 		$class = ref($class) || $class;
 		# and then store it
 		$VERBOSITY{$class} = $_[1];
 	}
+    elsif ($_[0] eq 'retrofit') {
+		(defined $_[1]) || die "You must specify a module for Class::Throwable to retrofit\n";        
+        my $package = $_[1];
+        my $retrofitter = sub { Class::Throwable->throw(@_) };
+        $retrofitter = $_[2] if defined $_[2] && ref($_[2]) eq 'CODE';
+        eval {
+            no strict 'refs';
+            *{"${package}::die"} = $retrofitter;
+        };
+        die "Could not retrofit '$package' with Class::Throwable : $@\n" if $@;
+    }
 	else {
 		($class eq 'Class::Throwable') 
-			|| die "Inline Exceptions can only be created with Class::Throwable";
+			|| die "Inline Exceptions can only be created with Class::Throwable\n";
 		my @exceptions = @_;
 		foreach my $exception (@exceptions) {
 			next unless $exception;
 			eval "package ${exception}; \@${exception}::ISA = qw(Class::Throwable);";  
-			die "An error occured while constructing Class::Throwable exception ($exception) : $@" if $@;      
+			die "An error occured while constructing Class::Throwable exception ($exception) : $@\n" if $@;      
 		}
 	}
 }
@@ -44,8 +55,8 @@ use overload q|""| => "toString", fallback => 1;
 # of inline exceptions
 sub setVerbosity {
 	my ($class, $verbosity) = @_;
-	(!ref($class)) || die "setVerbosity is a class method only, it cannot be used on an instance";
-	(defined($verbosity)) || die "You must specify a level of verbosity with Class::Throwable";
+	(!ref($class)) || die "setVerbosity is a class method only, it cannot be used on an instance\n";
+	(defined($verbosity)) || die "You must specify a level of verbosity with Class::Throwable\n";
 	$VERBOSITY{$class} = $verbosity;
 }
 
@@ -319,6 +330,32 @@ This has the same effect as the C<setVerbosity> class method, in fact, there is 
 
 There is one last method which can be used. This method has the widest scope of all the methods. The variable C<$Class::Throwable::DEFAULT_VERBOSITY> can be set. Setting this value will take effect if, 1) there is no value passed to the C<toString> method and 2) no verbosity level has been set for the particular class, either through C<setVerbosity> or the C<use> statement. 
 
+=head2 Module exception retro-fitting
+
+It is possible to retrofit a module to use Class::Throwable exceptions if you want to. Basially this will allow modules which C<die> with either strings or some other value, to throw Class::Throwable based exceptions. This feature is relatively new and should be considered to be experimental, any feedback on it is greatly appreciated. 
+
+B<NOTE:> It is important to do module retrofitting at the earliest possible moment (peferrably before the module you are retrofitting is compiled), as it will override C<die> within a specified package. 
+
+Other than all this, retrofitting is quite simple. Here is a basic example:
+
+  use Class::Throwable retrofit => 'My::Class';
+  
+Now anytime C<die> is called within I<My::Class> the calls will get converted to a Class::Throwable instance. You can also control how exceptions are converted like so:
+
+  use Class::Throwable retrofit => 'My::Class' => sub { My::Exception->throw(@_) };
+
+Now anytime C<die> is called within I<My::Class> the calls will get converted to a My::Exception instance instead. Or a slightly more complex examples like this:
+
+  use Class::Throwable retrofit => (
+                'My::Class' => sub { 
+                    My::IllegalOperation->throw(@_) if $_[0] =~ /^Illegal Operation/;
+                    My::Exception->throw(@_);
+                });
+                                
+Now anytime C<die> is called within I<My::Class> the calls will get converted to a My::Exception instance unless the exception matches the reg-exp, in which case an My::IllegalOperation exception is thrown.
+
+There are a couple of points to be made regarding this functionality. First, it will add another stack frame to your exceptions (the retrofit routine basically). This is probably avoidable, but as this is still experimental I wanted to keep things somewhat simple. And second, if you supply a custom C<die> handler, you should be sure that it will C<die> somewhere within that routine. If you do not, you may have many un-intended consequences.
+
 =head1 METHODS
 
 =head2 Constructor
@@ -410,13 +447,13 @@ None that I am aware of. Of course, if you find a bug, let me know, and I will b
 
 I use B<Devel::Cover> to test the code coverage of my tests, below is the B<Devel::Cover> report on this module test suite.
 
- ------------------------ ------ ------ ------ ------ ------ ------ ------
- File                       stmt branch   cond    sub    pod   time  total
- ------------------------ ------ ------ ------ ------ ------ ------ ------
- Class/Throwable.pm        100.0   97.4   53.3  100.0  100.0  100.0   95.3
- ------------------------ ------ ------ ------ ------ ------ ------ ------
- Total                     100.0   97.4   53.3  100.0  100.0  100.0   95.3
- ------------------------ ------ ------ ------ ------ ------ ------ ------
+ ---------------------------- ------ ------ ------ ------ ------ ------ ------
+ File                           stmt branch   cond    sub    pod   time  total
+ ---------------------------- ------ ------ ------ ------ ------ ------ ------
+ Class/Throwable.pm            100.0   97.8   55.6  100.0  100.0  100.0   95.4
+ ---------------------------- ------ ------ ------ ------ ------ ------ ------
+ Total                         100.0   97.8   55.6  100.0  100.0  100.0   95.4
+ ---------------------------- ------ ------ ------ ------ ------ ------ ------
 
 =head1 SEE ALSO
 

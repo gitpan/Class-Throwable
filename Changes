@@ -1,5 +1,11 @@
 Revision history for Perl extension Class-Throwable.
 
+0.09 Tues Nov 30 2004
+    - added the 'retrofit' capabilities, see the docs for 
+      more information about this
+        - added 't/50_Class_Throwable_retrofit_test.t' 
+          to test this functionality
+
 0.08 Fri Nov 26 2004
     - still trying to fix some platform specific issues
       with the tests.

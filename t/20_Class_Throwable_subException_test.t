@@ -9,6 +9,10 @@ BEGIN {
     use_ok('Class::Throwable');
 }
 
+my $path_seperator = "/";
+$path_seperator = "\\" if $^O eq 'Win32';
+$path_seperator = ":"  if $^O eq 'Mac';
+
 eval {
 	throw Class::Throwable "This is our first exception";
 };
@@ -45,22 +49,22 @@ This is our third exception
      ----------------
      package: main
      subroutine: (eval)
-     filename: t/20_Class_Throwable_subException_test.t
-     line number: 24
+     filename: t${path_seperator}20_Class_Throwable_subException_test.t
+     line number: 28
 This is our second exception
   >> stack frame (1)
      ----------------
      package: main
      subroutine: (eval)
-     filename: t/20_Class_Throwable_subException_test.t
-     line number: 18
+     filename: t${path_seperator}20_Class_Throwable_subException_test.t
+     line number: 22
 This is our first exception
   >> stack frame (1)
      ----------------
      package: main
      subroutine: (eval)
-     filename: t/20_Class_Throwable_subException_test.t
-     line number: 12
+     filename: t${path_seperator}20_Class_Throwable_subException_test.t
+     line number: 16
 EXPECTED
 
 is($e3->toString(2), $expected, '... toString prints subexceptions too');
@@ -83,9 +87,9 @@ Testing non-object sub-Exceptions
      ----------------
      package: main
      subroutine: (eval)
-     filename: t/20_Class_Throwable_subException_test.t
-     line number: 68
-Illegal division by zero at t/20_Class_Throwable_subException_test.t line 69.
+     filename: t${path_seperator}20_Class_Throwable_subException_test.t
+     line number: 72
+Illegal division by zero at t/20_Class_Throwable_subException_test.t line 73.
 EXPECTED2
 
 is($@->toString(2), $expected2, '... toString prints what we expected');

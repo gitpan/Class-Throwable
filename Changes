@@ -1,5 +1,12 @@
 Revision history for Perl extension Class-Throwable.
 
+0.06 Wed Nov 24 2004
+    - fixed some test files which were failing because
+      of platform specific path seperators, no other code
+      has been changed.
+    - changed Makefile.PL to have 'use 5.006' in it to assure
+      that this is only run with modern perls.
+
 0.05 Thurs Nov 18 2004
     - now using Scalar::Util::blessed() instead of 
       the convoluted UNIVERSAL::isa() stuff. 

@@ -1,3 +1,4 @@
+use 5.006; # at least perl 5.6
 use ExtUtils::MakeMaker;
 WriteMakefile(
     NAME         => 'Class::Throwable',

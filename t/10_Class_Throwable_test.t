@@ -9,6 +9,10 @@ BEGIN {
     use_ok('Class::Throwable');
 }
 
+my $path_seperator = "/";
+$path_seperator = "\\" if $^O eq 'Win32';
+$path_seperator = ":"  if $^O eq 'Mac';
+
 can_ok("Class::Throwable", 'throw');
 
 # test without a message
@@ -46,22 +50,22 @@ is_deeply(scalar $@->getStackTrace(),
         # these are the values in the stack trace:
         # $package, $filename, $line, $subroutine, 
         # $hasargs, $wantarray, $evaltext, $is_require
-        [[ 'main', 't/10_Class_Throwable_test.t', '31', '(eval)', 0, undef, undef, undef ]],
+        [[ 'main', "t${path_seperator}10_Class_Throwable_test.t", '35', '(eval)', 0, undef, undef, undef ]],
         '... got the stack trace we expected');
         
 is_deeply($@->getStackTrace(),
         # same thing in array context :)
-        [ 'main', 't/10_Class_Throwable_test.t', '31', '(eval)', 0, undef, undef, undef ],
+        [ 'main', "t${path_seperator}10_Class_Throwable_test.t", '35', '(eval)', 0, undef, undef, undef ],
         '... got the stack trace we expected');   
         
 can_ok($@, 'stackTraceToString');
 is($@->stackTraceToString(),
-   q{  >> stack frame (1)
+   qq{  >> stack frame (1)
      ----------------
      package: main
      subroutine: (eval)
-     filename: t/10_Class_Throwable_test.t
-     line number: 31},
+     filename: t${path_seperator}10_Class_Throwable_test.t
+     line number: 35},
    '... got the stack trace string we expected');    
    
 ok(overload::Overloaded($@), '... stringified overload');
@@ -77,13 +81,13 @@ is("$@", 'Test Message', '... got the stringified result we expected');
 Class::Throwable->import(VERBOSE => 2);
 
 is("$@",
-   q{Test Message
+   qq{Test Message
   >> stack frame (1)
      ----------------
      package: main
      subroutine: (eval)
-     filename: t/10_Class_Throwable_test.t
-     line number: 31
+     filename: t${path_seperator}10_Class_Throwable_test.t
+     line number: 35
 },
    '... got the stringified result we expected');    
    
@@ -117,7 +121,7 @@ isa_ok($@, 'Class::Throwable');
 is($@, $exception, '... it is the same exception too');
 
 is_deeply($@->getStackTrace(),
-		  [ 'main', 't/10_Class_Throwable_test.t', '113', '(eval)', 0, undef, undef, undef ],
+		  [ 'main', "t${path_seperator}10_Class_Throwable_test.t", '117', '(eval)', 0, undef, undef, undef ],
           '... got the stack trace we expected');  
 
 														          

@@ -11,6 +11,10 @@ BEGIN {
     use_ok('TestException' => (VERBOSE => 2));
 }
 
+my $path_seperator = "/";
+$path_seperator = "\\" if $^O eq 'Win32';
+$path_seperator = ":"  if $^O eq 'Mac';
+
 eval {
 	throw TestException "This is my message";
 };
@@ -21,8 +25,8 @@ This is my message
      ----------------
      package: main
      subroutine: (eval)
-     filename: t/35_Class_Throwable_sub_class_test.t
-     line number: 14
+     filename: t${path_seperator}35_Class_Throwable_sub_class_test.t
+     line number: 18
 EXPECTED
 
 is($@, $expected, '... got the output we expected');

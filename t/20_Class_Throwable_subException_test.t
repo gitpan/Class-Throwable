@@ -89,7 +89,7 @@ Testing non-object sub-Exceptions
      subroutine: (eval)
      filename: t${path_seperator}20_Class_Throwable_subException_test.t
      line number: 72
-Illegal division by zero at t/20_Class_Throwable_subException_test.t line 73.
+Illegal division by zero at t${path_seperator}20_Class_Throwable_subException_test.t line 73.
 EXPECTED2
 
 is($@->toString(2), $expected2, '... toString prints what we expected');

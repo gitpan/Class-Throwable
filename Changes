@@ -1,5 +1,10 @@
 Revision history for Perl extension Class-Throwable.
 
+0.07 Wed Nov 24 2004
+    - my fix for the test files was wrong (I have to admit
+      I didnt test it on the other platforms, I was lazy, 
+      but the bad kind of lazy). This should work now.
+
 0.06 Wed Nov 24 2004
     - fixed some test files which were failing because
       of platform specific path seperators, no other code

@@ -10,8 +10,8 @@ BEGIN {
 }
 
 my $path_seperator = "/";
-$path_seperator = "\\" if $^O eq 'Win32';
-$path_seperator = ":"  if $^O eq 'Mac';
+$path_seperator = "\\" if $^O eq 'MSWin32';
+$path_seperator = ":"  if $^O eq 'MacOS';
 
 can_ok("Class::Throwable", 'throw');
 

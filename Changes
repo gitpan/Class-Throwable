@@ -1,5 +1,10 @@
 Revision history for Perl extension Class-Throwable.
 
+0.05 Thurs Nov 18 2004
+    - now using Scalar::Util::blessed() instead of 
+      the convoluted UNIVERSAL::isa() stuff. 
+      - added Scalar::Util as a dependency
+
 0.04 Mon Oct 4 2004	
     - I changed the way Verbosity is handled. Removing
       the $Class::Throwable::VERBOSE variable, in favor

@@ -4,7 +4,9 @@ package Class::Throwable;
 use strict;
 use warnings;
 
-our $VERSION = '0.04';
+our $VERSION = '0.05';
+
+use Scalar::Util qw(blessed);
 
 our $DEFAULT_VERBOSITY = 1;
 
@@ -61,7 +63,7 @@ sub new {
 sub throw { 
 	my ($class, $message, $sub_exception) = @_;
 	# if i am being re-thrown, then just die with the class
-	if (ref($class) && UNIVERSAL::isa($class, "Class::Throwable")) {
+	if (blessed($class) && $class->isa("Class::Throwable")) {
 		# first make sure we have a stack trace, if we 
 		# don't then we were likely created with 'new'
 		# and not 'throw', and so we need to gather the
@@ -188,7 +190,7 @@ sub toString {
         my $e = $self->getSubException();
         # make sure the sub-exception is one
         # of our objects, and ....
-        if (ref($e) && UNIVERSAL::isa($e, "Class::Throwable")) {
+        if (blessed($e) && $e->isa("Class::Throwable")) {
             # deal with it appropriately
             $output .= $e->toString($verbosity);
         }
@@ -411,9 +413,9 @@ I use B<Devel::Cover> to test the code coverage of my tests, below is the B<Deve
  ------------------------ ------ ------ ------ ------ ------ ------ ------
  File                       stmt branch   cond    sub    pod   time  total
  ------------------------ ------ ------ ------ ------ ------ ------ ------
- Class/Throwable.pm        100.0   97.4   53.3  100.0  100.0  100.0   95.2
+ Class/Throwable.pm        100.0   97.4   53.3  100.0  100.0  100.0   95.3
  ------------------------ ------ ------ ------ ------ ------ ------ ------
- Total                     100.0   97.4   53.3  100.0  100.0  100.0   95.2
+ Total                     100.0   97.4   53.3  100.0  100.0  100.0   95.3
  ------------------------ ------ ------ ------ ------ ------ ------ ------
 
 =head1 SEE ALSO

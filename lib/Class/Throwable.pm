@@ -4,7 +4,7 @@ package Class::Throwable;
 use strict;
 use warnings;
 
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 
 our $VERBOSE = 1;
 
@@ -25,19 +25,39 @@ sub import {
 # overload the stringify operation
 use overload q|""| => "toString", fallback => 1;
 
+# create an exception without 
+# any stack trace information
+sub new {
+	my ($class, $message, $sub_exception) = @_;
+	my $exception = {};
+	bless($exception, ref($class) || $class);
+	$exception->_init($message, $sub_exception);
+	return $exception;		
+}
+
+# throw an exception with this
 sub throw { 
 	my ($class, $message, $sub_exception) = @_;
 	# if i am being re-thrown, then just die with the class
-	die $class if ref($class) && UNIVERSAL::isa($class, "Class::Throwable");
+	if (ref($class) && UNIVERSAL::isa($class, "Class::Throwable")) {
+		# first make sure we have a stack trace, if we 
+		# don't then we were likely created with 'new'
+		# and not 'throw', and so we need to gather the
+		# stack information from here 
+		$class->_initStackTrace() unless my @s = $class->getStackTrace();
+		die $class;
+	}
 	# otherwise i am being thrown for the first time so 
 	# create a new 'me' and then die after i am blessed
 	my $exception = {};
 	bless($exception, $class);
-	$exception->_init($message, $sub_exception);	
+	$exception->_init($message, $sub_exception);
+	# init our stack trace
+	$exception->_initStackTrace();	
 	die $exception;
 }
 
-## initializer
+## initializers
 
 sub _init {
 	my ($self, $message, $sub_exception) = @_;
@@ -52,6 +72,11 @@ sub _init {
     # perl itself and therefore could be a string
     $self->{sub_exception} = $sub_exception; 
 	$self->{message} = $message || "An ". ref($self) . " Exception has been thrown";
+	$self->{stack_trace} = [];
+}
+
+sub _initStackTrace {
+	my ($self) = @_;
 	my @stack_trace;
     # these are the 10 values returned from caller():
     # 	$package, $filename, $line, $subroutine, $hasargs,
@@ -205,6 +230,14 @@ Class::Throwable - A minimal lightweight exception class
   eval {
       throw My::App::Exception::IllegalOperation "Bad, real bad";
   };
+  
+  # you can even create exceptions, then throw them later
+  my $e = Class::Throwable->new("Things have gone bad, but I need to do something first", $@);
+  
+  # do something else ...
+  
+  # then throw the exception we created earlier
+  throw $e
 
 =head1 DESCRIPTION
 
@@ -218,11 +251,17 @@ This module implements a minimal lightweight exception object. It is meant to be
 
 =item B<throw ($message, $sub_exception)>
 
-The only way to construct an exception object is to C<throw> it. This method will construct the exception object, collect all the information from the call stack and then C<die>. 
+The most common way to construct an exception object is to C<throw> it. This method will construct the exception object, collect all the information from the call stack and then C<die>. 
 
 The optional C<$message> argument can be used to pass custom information along with the exception object. Commonly this will be a string, but this module makes no attempt to enforce that it be anything other than a scalar, so more complex references or objects can be used. If no C<$message> is passed in, a default one will be constructed for you.
 
 The second optional argument, C<$sub_exception>, can be used to retain information about an exception which has been caught but might not be appropriate to be re-thrown and is better wrapped within a new exception object. While this argument will commonly be another Class::Throwable object, that fact is not enforced so you can pass in normal string based perl exceptions as well.
+
+If this method is called as an instance method on an exception object pre-built with C<new>, only then is the stack trace information populated and the exception is then passed to C<die>.
+
+=item B<new ($message, $sub_exception)>
+
+This is an alternate means of creating an exception object, it is much like C<throw>, except that it does not collect stack trace information or C<die>. It stores the C<$message> and C<$sub_exception> values, and then returns the exception instance, to be possibly thrown later on.
 
 =back
 
@@ -288,9 +327,9 @@ I use B<Devel::Cover> to test the code coverage of my tests, below is the B<Deve
  ------------------------ ------ ------ ------ ------ ------ ------ ------
  File                       stmt branch   cond    sub    pod   time  total
  ------------------------ ------ ------ ------ ------ ------ ------ ------
- Class/Throwable.pm        100.0   95.8   66.7  100.0  100.0  100.0   96.7
+ Class/Throwable.pm        100.0   96.2   58.3  100.0  100.0  100.0   95.7
  ------------------------ ------ ------ ------ ------ ------ ------ ------
- Total                     100.0   95.8   66.7  100.0  100.0  100.0   96.7
+ Total                     100.0   96.2   58.3  100.0  100.0  100.0   95.7
  ------------------------ ------ ------ ------ ------ ------ ------ ------
 
 =head1 SEE ALSO

@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 23;
+use Test::More tests => 29;
 
 BEGIN { 
     use_ok('Class::Throwable');
@@ -103,5 +103,22 @@ isa_ok($@, 'Class::Throwable');
 is_deeply($@->getMessage(),
           [ 1 .. 5 ],
           '... you can use anything for a message');
-                                                           
+                                                    
+my $exception = Class::Throwable->new("A message for you");
+isa_ok($exception, 'Class::Throwable');
+
+is($exception->getMessage(), 'A message for you', '... got the message we expected');
+is_deeply(scalar $exception->getStackTrace(), [], '... we dont have a stack trace yet');
+
+eval {
+	throw $exception;
+};
+isa_ok($@, 'Class::Throwable');
+is($@, $exception, '... it is the same exception too');
+
+is_deeply($@->getStackTrace(),
+		  [ 'main', 't/10_Class_Throwable_test.t', '113', '(eval)', 0, undef, undef, undef ],
+          '... got the stack trace we expected');  
+
+														          
   

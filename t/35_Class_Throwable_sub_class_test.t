@@ -12,7 +12,7 @@ BEGIN {
 }
 
 my $path_seperator = "/";
-$path_seperator = "\\" if $^O eq 'MSWin32';
+# MSWin32 perl works fine with "/"
 $path_seperator = ":"  if $^O eq 'MacOS';
 
 eval {

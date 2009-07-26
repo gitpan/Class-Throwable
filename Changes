@@ -1,5 +1,8 @@
 Revision history for Perl extension Class-Throwable.
 
+0.11 Sun Jul 26 2009
+    - win32 compatibility patch 
+
 0.10 Sun Dec 12 2004
     - changed the output format to a more compact
       (each stack frame takes one line rather than 6)
